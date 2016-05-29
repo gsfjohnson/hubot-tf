@@ -21,6 +21,5 @@ module.exports = (robot) ->
 
   robot.respond /tf create key$/i, (msg) ->
     msg.send {room: msg.message.user.name}, "Creating key for #{msg.message.user.name}..."
-    exec("ssh-keygen -f ~/#{msg.message.user.name}.key -b 1024 -C tf -N ''", function (error, stdout, stderr) {
+    exec "ssh-keygen -f ~/#{msg.message.user.name}.key -b 1024 -C tf -N ''", (error, stdout, stderr) ->
       msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
-    });
