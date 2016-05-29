@@ -101,6 +101,7 @@ module.exports = (robot) ->
 
     dir = []
     for fn in fs.readdirSync(basepath)
-      dir.push fn
+      stat = fs.statSync("#{basepath}/#{fn}")
+      dir.push fn if stat.isDirectory()
 
     msg.reply dir.join "\n"
