@@ -78,7 +78,7 @@ module.exports = (robot) ->
     fn.replace /\//, "_"
     fp = basepath + "/" + fn
 
-    exec "GIT_SSH_COMMAND='ssh -i #{fp} -F /dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' git clone #{url} #{fp}", (error, stdout, stderr) ->
+    exec "GIT_SSH_COMMAND='ssh -i #{fp} -F /dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' git clone #{url} #{projpath}", (error, stdout, stderr) ->
       if error
         msg.send {room: msg.message.user.name}, "Error: #{error}"
       if stderr
