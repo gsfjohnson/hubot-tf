@@ -18,6 +18,8 @@ sys = require('sys')
 exec = require('child_process').exec;
 
 basepath = process.env.HUBOT_TF_BASEPATH || ''
+privatekey = basepath + "/hubot-tf.key"
+publickey = privatekey + ".pub"
 
 module.exports = (robot) ->
 
@@ -44,45 +46,33 @@ module.exports = (robot) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,'tf')
       return msg.send {room: msg.message.user.name}, "Not authorized.  Missing 'tf' role."
 
-    #fn = msg.message.user.name
-    #fn.replace /\//, "_"
-    fp = basepath + "/hubot-tf"
-
-    if fs.existsSync("#{fp}.pub")
+    if fs.existsSync("#{publickey}")
       return msg.send {room: msg.message.user.name}, "Key exists!  Destroy it first."
 
-    exec "ssh-keygen -f #{fp} -b 1024 -C hubot-tf -N ''", (error, stdout, stderr) ->
+    exec "ssh-keygen -f #{privatekey} -b 1024 -C hubot-tf -N ''", (error, stdout, stderr) ->
       #msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
-      pubkey = fs.readFileSync("#{fp}.pub", 'utf-8').toString()
+      pubkey = fs.readFileSync("#{publickey}", 'utf-8').toString()
       msg.send {room: msg.message.user.name}, "```\n#{pubkey}\n```"
 
   robot.respond /tf show key$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,'tf')
       return msg.send {room: msg.message.user.name}, "Not authorized.  Missing 'tf' role."
 
-    #fn = msg.message.user.name
-    #fn.replace /\//, "_"
-    fp = basepath + "/hubot-tf"
-
-    if ! fs.existsSync("#{fp}.pub")
+    if ! fs.existsSync("#{publickey}")
       return msg.send {room: msg.message.user.name}, "No key on file!  Create one first."
 
-    pubkey = fs.readFileSync("#{fp}.pub", 'utf-8').toString()
+    pubkey = fs.readFileSync("#{publickey}", 'utf-8').toString()
     return msg.send {room: msg.message.user.name}, "```\n#{pubkey}\n```"
 
   robot.respond /tf destroy key$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,'tf')
       return msg.send {room: msg.message.user.name}, "Not authorized.  Missing 'tf' role."
 
-    #fn = msg.message.user.name
-    #fn.replace /\//, "_"
-    fp = basepath + "/hubot-tf"
-
-    if ! fs.existsSync("#{fp}.pub")
+    if ! fs.existsSync("#{publickey}")
       return msg.send {room: msg.message.user.name}, "No key on file!  Create one first."
 
-    fs.unlinkSync("#{fp}")
-    fs.unlinkSync("#{fp}.pub")
+    fs.unlinkSync("#{privatekey}")
+    fs.unlinkSync("#{publickey}")
     return msg.send {room: msg.message.user.name}, "Key destroyed!"
 
   robot.respond /tf clone ([^\s]+) ([^\s]+)$/i, (msg) ->
@@ -97,10 +87,20 @@ module.exports = (robot) ->
     #fn.replace /\//, "_"
     fp = basepath + "/hubot-tf"
 
-    exec "GIT_SSH_COMMAND='ssh -i #{fp} -F /dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' git clone #{url} #{projpath}", (error, stdout, stderr) ->
+    exec "GIT_SSH_COMMAND='ssh -i #{privatekey} -F /dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' git clone #{url} #{projpath}", (error, stdout, stderr) ->
       if error
         msg.send {room: msg.message.user.name}, "Error: #{error}"
       if stderr
         msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
       if stdout
         msg.send {room: msg.message.user.name}, "stdout:\n```\n#{stdout}\n```"
+
+  robot.respond /tf list(\sprojects)?$/i, (msg) ->
+    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,'tf')
+      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing 'tf' role."
+
+    dir = []
+    for fn in fs.readdirSync(basepath)
+      dir.push fn
+
+    msg.reply dir.join "\n"
