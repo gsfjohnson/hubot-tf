@@ -38,7 +38,8 @@ module.exports = (robot) ->
     fn.replace /\//, "_"
     fp = basepath + "/" + fn
 
-    if ! fs.accessSync("#{fp}.pub", fs.F_OK|fs.R_OK)
+    #if ! fs.accessSync("#{fp}.pub", fs.F_OK|fs.R_OK)
+    if ! fs.existsSync("#{fp}.pub")
       return msg.send {room: msg.message.user.name}, "No key on file!  Create one."
 
     pubkey = fs.readFileSync("#{fp}.pub", 'utf-8').toString()
