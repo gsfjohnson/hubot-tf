@@ -115,9 +115,8 @@ module.exports = (robot) ->
     projname = msg.match[2].replace /\//, "_"
     msg.send {room: msg.message.user.name}, projname
 
-    exec "cd #{basepath}/#{projname}; terraform #{action}", (error, stdout, stderr) ->
+    exec "cd #{basepath}/#{projname}; terraform #{action} -input=false -no-color", (error, stdout, stderr) ->
       if stderr
-        stderr.replace /\[[^\s]+m/, ''
         msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
       else if error
         msg.send {room: msg.message.user.name}, "error:\n```\n#{error}\n```"
