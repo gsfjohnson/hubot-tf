@@ -31,7 +31,7 @@ module.exports = (robot) ->
       "#{tfName} destroy key - erase key"
       "#{tfName} show key - display public key"
       "#{tfName} clone <repourl> <projectname>"
-      "#{tfName} (plan|apply|destroy) <projectname> - tf operations"
+      "#{tfName} (plan|refresh|apply|get|destroy) <projectname> - tf operations"
     ]
 
     for str in arr
@@ -89,10 +89,10 @@ module.exports = (robot) ->
     fp = basepath + "/hubot-tf"
 
     exec "GIT_SSH_COMMAND='ssh -i #{privatekey} -F /dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' git clone #{url} #{projpath}", (error, stdout, stderr) ->
-      if error
-        msg.send {room: msg.message.user.name}, "Error: #{error}"
       if stderr
         msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
+      else if error
+        msg.send {room: msg.message.user.name}, "Error: #{error}"
       if stdout
         msg.send {room: msg.message.user.name}, "stdout:\n```\n#{stdout}\n```"
 
@@ -107,7 +107,7 @@ module.exports = (robot) ->
 
     return msg.send {room: msg.message.user.name}, dir.join "\n"
 
-  robot.respond /tf (plan|refresh|apply|destroy) ([^\s]+)$/i, (msg) ->
+  robot.respond /tf (plan|refresh|apply|get|destroy) ([^\s]+)$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
       return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
 
@@ -116,9 +116,10 @@ module.exports = (robot) ->
     msg.send {room: msg.message.user.name}, projname
 
     exec "cd #{basepath}/#{projname}; terraform #{action}", (error, stdout, stderr) ->
-      if error
-        msg.send {room: msg.message.user.name}, "Error: #{error}"
       if stderr
+        stderr.replace /\[[^\s]+m/, ''
         msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
+      else if error
+        msg.send {room: msg.message.user.name}, "error:\n```\n#{error}\n```"
       if stdout
         msg.send {room: msg.message.user.name}, "stdout:\n```\n#{stdout}\n```"
