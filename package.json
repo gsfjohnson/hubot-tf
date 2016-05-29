@@ -10,7 +10,7 @@
     "url": "https://github.com/gsfjohnson/hubot-tf"
   },
   "dependencies": {
-    "coffee-script": "~1.6",
+    "coffee-script": "~1.6"
   },
   "devDependencies": {
     "mocha": "*",
