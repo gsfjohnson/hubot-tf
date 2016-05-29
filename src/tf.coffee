@@ -14,8 +14,8 @@
 #   gsfjohnson
 
 // or more concisely
-var sys = require('sys')
-var exec = require('child_process').exec;
+sys = require('sys')
+exec = require('child_process').exec;
 
 module.exports = (robot) ->
 
