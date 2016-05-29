@@ -20,17 +20,18 @@ exec = require('child_process').exec;
 basepath = process.env.HUBOT_TF_BASEPATH || ''
 privatekey = basepath + "/hubot-tf.key"
 publickey = privatekey + ".pub"
+tfName = tfRole = 'tf'
 
 module.exports = (robot) ->
 
   robot.respond /tf help$/, (msg) ->
     cmds = []
     arr = [
-      "tf create key - create rsa key, for git operations"
-      "tf destroy key - erase key"
-      "tf show key - display public key"
-      "tf clone <repourl> <projectname>"
-      "tf (plan|apply|destroy) <projectname> - tf operations"
+      "#{tfName} create key - create rsa key, for git operations"
+      "#{tfName} destroy key - erase key"
+      "#{tfName} show key - display public key"
+      "#{tfName} clone <repourl> <projectname>"
+      "#{tfName} (plan|apply|destroy) <projectname> - tf operations"
     ]
 
     for str in arr
@@ -43,8 +44,8 @@ module.exports = (robot) ->
       msg.reply cmds.join "\n"
 
   robot.respond /tf create key$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,'tf')
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing 'tf' role."
+    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
+      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
 
     if fs.existsSync("#{publickey}")
       return msg.send {room: msg.message.user.name}, "Key exists!  Destroy it first."
@@ -55,8 +56,8 @@ module.exports = (robot) ->
       msg.send {room: msg.message.user.name}, "```\n#{pubkey}\n```"
 
   robot.respond /tf show key$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,'tf')
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing 'tf' role."
+    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
+      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
 
     if ! fs.existsSync("#{publickey}")
       return msg.send {room: msg.message.user.name}, "No key on file!  Create one first."
@@ -65,8 +66,8 @@ module.exports = (robot) ->
     return msg.send {room: msg.message.user.name}, "```\n#{pubkey}\n```"
 
   robot.respond /tf destroy key$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,'tf')
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing 'tf' role."
+    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
+      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
 
     if ! fs.existsSync("#{publickey}")
       return msg.send {room: msg.message.user.name}, "No key on file!  Create one first."
@@ -76,8 +77,8 @@ module.exports = (robot) ->
     return msg.send {room: msg.message.user.name}, "Key destroyed!"
 
   robot.respond /tf clone ([^\s]+) ([^\s]+)$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,'tf')
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing 'tf' role."
+    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
+      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
 
     url = msg.match[1]
     projname = msg.match[2].replace /\//, "_"
@@ -96,12 +97,28 @@ module.exports = (robot) ->
         msg.send {room: msg.message.user.name}, "stdout:\n```\n#{stdout}\n```"
 
   robot.respond /tf list(\sprojects)?$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,'tf')
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing 'tf' role."
+    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
+      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
 
     dir = []
     for fn in fs.readdirSync(basepath)
       stat = fs.statSync("#{basepath}/#{fn}")
       dir.push fn if stat.isDirectory()
 
-    msg.reply dir.join "\n"
+    return msg.send {room: msg.message.user.name}, dir.join "\n"
+
+  robot.respond /tf (plan|refresh|apply|destroy) ([^\s]+)$/i, (msg) ->
+    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
+      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+
+    action = msg.match[1]
+    projname = msg.match[2].replace /\//, "_"
+    msg.send {room: msg.message.user.name}, projname
+
+    exec "cd #{basepath}/#{projname}; terraform #{action}", (error, stdout, stderr) ->
+      if error
+        msg.send {room: msg.message.user.name}, "Error: #{error}"
+      if stderr
+        msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
+      if stdout
+        msg.send {room: msg.message.user.name}, "stdout:\n```\n#{stdout}\n```"
