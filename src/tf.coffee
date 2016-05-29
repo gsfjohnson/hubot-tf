@@ -79,4 +79,9 @@ module.exports = (robot) ->
     fp = basepath + "/" + fn
 
     exec "GIT_SSH_COMMAND='ssh -i #{fp} -F /dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' git clone #{url} #{fp}", (error, stdout, stderr) ->
-      msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
+      if error
+        msg.send {room: msg.message.user.name}, "Error: #{error}"
+      if stderr
+        msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
+      if stdout
+        msg.send {room: msg.message.user.name}, "stdout:\n```\n#{stdout}\n```"
