@@ -22,8 +22,6 @@ basepath = process.env.HUBOT_TF_BASEPATH || ''
 module.exports = (robot) ->
 
   robot.respond /tf create key$/i, (msg) ->
-    msg.send {room: msg.message.user.name}, "Creating key for #{msg.message.user.name}..."
-
     fn = msg.message.user.name
     fn.replace /\//, "_"
     fp = basepath + "/" + fn
