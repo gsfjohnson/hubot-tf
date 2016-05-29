@@ -1,0 +1,25 @@
+{
+  "name": "hubot-tf",
+  "description": "Hubot script for basic tf functionality",
+  "version": "0.0.1",
+  "author": "gsfjohnson@gmail.com",
+  "license": "MIT",
+  "keywords": [ "hubot" ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gsfjohnson/hubot-tf"
+  },
+  "dependencies": {
+    "coffee-script": "~1.6",
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "chai": "*",
+    "sinon-chai": "*",
+    "sinon": "*"
+  },
+  "main": "index.coffee",
+  "scripts": {
+    "test": "script/test"
+  }
+}
