@@ -28,7 +28,7 @@ module.exports = (robot) ->
     fn.replace /\//, "_"
     fp = basepath + "/" + fn
 
-    exec "ssh-keygen -f #{fp} -b 1024 -C tf -N ''", (error, stdout, stderr) ->
+    exec "ssh-keygen -f #{fp} -b 1024 -C hubot-tf -N ''", (error, stdout, stderr) ->
       #msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
       pubkey = fs.readFileSync("#{fp}.pub", 'utf-8').toString()
       msg.send {room: msg.message.user.name}, "Public key: \n```\n#{pubkey}\n```"
@@ -38,9 +38,20 @@ module.exports = (robot) ->
     fn.replace /\//, "_"
     fp = basepath + "/" + fn
 
-    #if ! fs.accessSync("#{fp}.pub", fs.F_OK|fs.R_OK)
     if ! fs.existsSync("#{fp}.pub")
       return msg.send {room: msg.message.user.name}, "No key on file!  Create one."
 
     pubkey = fs.readFileSync("#{fp}.pub", 'utf-8').toString()
     return msg.send {room: msg.message.user.name}, "Public key: \n```\n#{pubkey}\n```"
+
+  robot.respond /tf destroy key$/i, (msg) ->
+    fn = msg.message.user.name
+    fn.replace /\//, "_"
+    fp = basepath + "/" + fn
+
+    if ! fs.existsSync("#{fp}.pub")
+      return msg.send {room: msg.message.user.name}, "No key on file!  Cowardly refusing to destroy nothing."
+
+    fs.unlinkSync("#{fp}")
+    fs.unlinkSync("#{fp}.pub")
+    return msg.send {room: msg.message.user.name}, "Key destroyed!"
