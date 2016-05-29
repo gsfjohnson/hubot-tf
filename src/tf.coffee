@@ -13,7 +13,7 @@
 # Author:
 #   gsfjohnson
 
-// or more concisely
+fs = require('fs')
 sys = require('sys')
 exec = require('child_process').exec;
 
@@ -21,5 +21,15 @@ module.exports = (robot) ->
 
   robot.respond /tf create key$/i, (msg) ->
     msg.send {room: msg.message.user.name}, "Creating key for #{msg.message.user.name}..."
-    exec "ssh-keygen -f ~/#{msg.message.user.name}.key -b 1024 -C tf -N ''", (error, stdout, stderr) ->
+
+    fn = msg.message.user.name
+    fn.replace /\//, "_"
+
+    basepath = "~/"
+    fp = basepath + fn
+
+    exec "ssh-keygen -f #{fp} -b 1024 -C tf -N ''", (error, stdout, stderr) ->
       msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
+      pubkey = fs.readFileSync("#{fp}.pub", 'utf-8').toString()
+      msg.send {room: msg.message.user.name}, "Public key: ```\n#{pubkey}\n```"
+      
