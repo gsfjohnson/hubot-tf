@@ -21,13 +21,32 @@ basepath = process.env.HUBOT_TF_BASEPATH || ''
 
 module.exports = (robot) ->
 
+  robot.respond /auth help$/, (msg) ->
+    cmds = []
+    arr = [
+      "tf create key - create rsa key, for git operations"
+      "tf destroy key - erase key"
+      "tf show key - display public key"
+      "tf clone <repourl> <projectname>"
+    ]
+
+    for str in arr
+      cmd = str.split " - "
+      cmds.push "`#{cmd[0]}` - #{cmd[1]}"
+
+    if replyInPrivate and msg.message?.user?.name?
+      msg.reply 'replied to you in private!'
+      robot.send {room: msg.message?.user?.name}, cmds.join "\n"
+    else
+      msg.reply cmds.join "\n"
+
   robot.respond /tf create key$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,'tf')
       return msg.send {room: msg.message.user.name}, "Not authorized.  Missing 'tf' role."
 
-    fn = msg.message.user.name
-    fn.replace /\//, "_"
-    fp = basepath + "/" + fn
+    #fn = msg.message.user.name
+    #fn.replace /\//, "_"
+    fp = basepath + "/hubot-tf"
 
     if fs.existsSync("#{fp}.pub")
       return msg.send {room: msg.message.user.name}, "Key exists!  Destroy it, then try this again?"
@@ -41,9 +60,9 @@ module.exports = (robot) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,'tf')
       return msg.send {room: msg.message.user.name}, "Not authorized.  Missing 'tf' role."
 
-    fn = msg.message.user.name
-    fn.replace /\//, "_"
-    fp = basepath + "/" + fn
+    #fn = msg.message.user.name
+    #fn.replace /\//, "_"
+    fp = basepath + "/hubot-tf"
 
     if ! fs.existsSync("#{fp}.pub")
       return msg.send {room: msg.message.user.name}, "No key on file!  Create one first, eh?"
@@ -55,9 +74,9 @@ module.exports = (robot) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,'tf')
       return msg.send {room: msg.message.user.name}, "Not authorized.  Missing 'tf' role."
 
-    fn = msg.message.user.name
-    fn.replace /\//, "_"
-    fp = basepath + "/" + fn
+    #fn = msg.message.user.name
+    #fn.replace /\//, "_"
+    fp = basepath + "/hubot-tf"
 
     if ! fs.existsSync("#{fp}.pub")
       return msg.send {room: msg.message.user.name}, "No key on file!  Create one first, eh?"
@@ -74,9 +93,9 @@ module.exports = (robot) ->
     projname = msg.match[2].replace /\//, "_"
     projpath = basepath + "/" + projname
 
-    fn = msg.message.user.name
-    fn.replace /\//, "_"
-    fp = basepath + "/" + fn
+    #fn = msg.message.user.name
+    #fn.replace /\//, "_"
+    fp = basepath + "/hubot-tf"
 
     exec "GIT_SSH_COMMAND='ssh -i #{fp} -F /dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' git clone #{url} #{projpath}", (error, stdout, stderr) ->
       if error
