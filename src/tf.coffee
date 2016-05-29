@@ -21,13 +21,14 @@ basepath = process.env.HUBOT_TF_BASEPATH || ''
 
 module.exports = (robot) ->
 
-  robot.respond /auth help$/, (msg) ->
+  robot.respond /tf help$/, (msg) ->
     cmds = []
     arr = [
       "tf create key - create rsa key, for git operations"
       "tf destroy key - erase key"
       "tf show key - display public key"
       "tf clone <repourl> <projectname>"
+      "tf (plan|apply|destroy) <projectname> - tf operations"
     ]
 
     for str in arr
@@ -49,7 +50,7 @@ module.exports = (robot) ->
     fp = basepath + "/hubot-tf"
 
     if fs.existsSync("#{fp}.pub")
-      return msg.send {room: msg.message.user.name}, "Key exists!  Destroy it, then try this again?"
+      return msg.send {room: msg.message.user.name}, "Key exists!  Destroy it first."
 
     exec "ssh-keygen -f #{fp} -b 1024 -C hubot-tf -N ''", (error, stdout, stderr) ->
       #msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
@@ -65,7 +66,7 @@ module.exports = (robot) ->
     fp = basepath + "/hubot-tf"
 
     if ! fs.existsSync("#{fp}.pub")
-      return msg.send {room: msg.message.user.name}, "No key on file!  Create one first, eh?"
+      return msg.send {room: msg.message.user.name}, "No key on file!  Create one first."
 
     pubkey = fs.readFileSync("#{fp}.pub", 'utf-8').toString()
     return msg.send {room: msg.message.user.name}, "```\n#{pubkey}\n```"
@@ -79,7 +80,7 @@ module.exports = (robot) ->
     fp = basepath + "/hubot-tf"
 
     if ! fs.existsSync("#{fp}.pub")
-      return msg.send {room: msg.message.user.name}, "No key on file!  Create one first, eh?"
+      return msg.send {room: msg.message.user.name}, "No key on file!  Create one first."
 
     fs.unlinkSync("#{fp}")
     fs.unlinkSync("#{fp}.pub")
