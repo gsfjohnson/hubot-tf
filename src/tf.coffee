@@ -168,13 +168,13 @@ module.exports = (robot) ->
     cmdline = "#{cmdline} -force" if action == 'destroy'
     msg.send {room: msg.message.user.name}, "```\n#{cmdline}\n```"
     exec cmdline, (error, stdout, stderr) ->
-      if stdout
-        if stdout.length < 1024
+      if stdout and !stderr
+        if stdout.length < 2048
           return msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
         else unless verbose
           out = 'Error'
           for line in stdout.split "\n"
-            if line.match /^Plan: /
+            if line.match /^(?:Plan: |Apply complete)/
               out = line
           return msg.send {room: msg.message.user.name}, "```\n#{out}\n```"
         out = []
