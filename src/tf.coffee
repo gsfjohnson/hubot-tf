@@ -37,6 +37,7 @@ module.exports = (robot) ->
       "#{tfName} (create|show|destroy) key - rsa key operations, for git"
       "#{tfName} clone <repourl> <projectname> - clone git repo into projectname directory"
       "#{tfName} list projects - enumerate projects"
+      "#{tfName} remote <projectname> - git remote info"
       "#{tfName} delete <projectname> - erase <projectname> files"
       "#{tfName} (plan|refresh|apply|get|destroy) <projectname> - tf operations"
       "#{tfName} env <projectname> set <key>=<value> - set env var"
@@ -116,6 +117,23 @@ module.exports = (robot) ->
       dir.push fn if stat.isDirectory()
 
     return msg.send {room: msg.message.user.name}, dir.join "\n"
+
+  robot.respond /tf remote ([^\s]+)$/i, (msg) ->
+    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
+      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+
+    projname = msg.match[1].replace /\//, "_"
+
+    unless fs.existsSync("#{basepath}/#{projname}")
+      return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
+
+    exec "cd #{basepath}/#{projname} ; git remote -v", (error, stdout, stderr) ->
+      if stderr
+        msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
+      else if error
+        msg.send {room: msg.message.user.name}, "Error: #{error}"
+      if stdout
+        msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
 
   robot.respond /tf (get) ([^\s]+)$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
