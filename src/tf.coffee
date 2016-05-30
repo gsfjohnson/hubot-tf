@@ -114,7 +114,7 @@ module.exports = (robot) ->
     action = msg.match[1]
     projname = msg.match[2].replace /\//, "_"
 
-    exec "cd #{basepath}/#{projname}; terraform #{action} -input=false -no-color", (error, stdout, stderr) ->
+    exec "cd #{basepath}/#{projname}; terraform #{action} -no-color", (error, stdout, stderr) ->
       if stderr
         msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
       else if error
@@ -129,7 +129,7 @@ module.exports = (robot) ->
     action = msg.match[1]
     projname = msg.match[2].replace /\//, "_"
 
-    exec "cd #{basepath}/#{projname}; terraform #{action} -no-color", (error, stdout, stderr) ->
+    exec "cd #{basepath}/#{projname}; terraform #{action} -input=false -no-color", (error, stdout, stderr) ->
       if stderr
         msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
       else if error
