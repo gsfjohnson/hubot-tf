@@ -23,6 +23,11 @@ publickey = privatekey + ".pub"
 tfName = tfRole = 'tf'
 
 sendqueue = []
+servicequeue = ->
+  obj = sendqueue.pop
+  msg = obj[msg]
+  out = obj[out]
+  msg.send {room: msg.message.user.name}, out
 
 module.exports = (robot) ->
 
@@ -168,14 +173,13 @@ module.exports = (robot) ->
       if stdout
         if stdout.length < 1024
           return msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
-        servicequeue = -> msg.send {room: msg.message.user.name}, sendqueue.pop
         out = []
         waitms = 200
         msg = ''
         for line in stdout.split "\n"
           if line.match /^\+\s/
             msg = out.join "\n"
-            sendqueue.push "```\n#{msg}\n```"
+            sendqueue.push { msg: msg, out: "```\n#{msg}\n```" }
             console.log msg
             setTimeout servicequeue, waitms
             waitms = waitms + 200
@@ -183,7 +187,7 @@ module.exports = (robot) ->
           out.push line
         msg = out.join "\n"
         console.log msg
-        sendqueue.push "```\n#{msg}\n```"
+        sendqueue.push { msg: msg, out: "```\n#{msg}\n```" }
         setTimeout servicequeue, waitms
 
   robot.respond /tf env ([^\s]+) set ([^\s]+)=(.+)$/i, (msg) ->
