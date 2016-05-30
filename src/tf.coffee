@@ -53,7 +53,7 @@ module.exports = (robot) ->
   robot.respond /tf help$/, (msg) ->
     cmds = []
     arr = [
-      "#{tfName} (create|show|destroy) key - rsa key operations, for git"
+      "#{tfName} (create|display|erase) key - rsa key operations, for git"
       "#{tfName} clone <repourl> <projectname> - clone git repo into projectname directory"
       "#{tfName} list projects - enumerate projects"
       "#{tfName} remote <projectname> - git remote info"
@@ -75,27 +75,27 @@ module.exports = (robot) ->
 
   robot.respond /tf create key$/i, (msg) ->
     return unless isAuthorized robot, msg
-    return if fileExistsSendAndReturnTrue msg, publickey, "Key exists!  Destroy it first."
+    return if fileExistsSendAndReturnTrue msg, publickey, "Key exists!  Erase it first."
 
     exec "ssh-keygen -f #{privatekey} -b 1024 -C hubot-tf -N ''", (error, stdout, stderr) ->
       #msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
       pubkey = fs.readFileSync("#{publickey}", 'utf-8').toString()
-      msg.send {room: msg.message.user.name}, "```\n#{pubkey}\n```"
+      msg.send {room: msg.message.user.name}, "Add this to your github repo as a deploy key, to give hubot read-only access.\n```\n#{pubkey}\n```"
 
-  robot.respond /tf show key$/i, (msg) ->
+  robot.respond /tf display key$/i, (msg) ->
     return unless isAuthorized robot, msg
     return if fileMissingSendAndReturnTrue msg, publickey, "No key on file!  Create one first."
 
     pubkey = fs.readFileSync("#{publickey}", 'utf-8').toString()
-    return msg.send {room: msg.message.user.name}, "```\n#{pubkey}\n```"
+    return msg.send {room: msg.message.user.name}, "Add this to your github repo as a deploy key, to give hubot read-only access.\n```\n#{pubkey}\n```"
 
-  robot.respond /tf destroy key$/i, (msg) ->
+  robot.respond /tf erase key$/i, (msg) ->
     return unless isAuthorized robot, msg
     return if fileMissingSendAndReturnTrue msg, publickey, "No key on file!  Create one first."
 
     fs.unlinkSync("#{privatekey}")
     fs.unlinkSync("#{publickey}")
-    return msg.send {room: msg.message.user.name}, "Key destroyed!"
+    return msg.send {room: msg.message.user.name}, "Key erased!"
 
   robot.respond /tf clone ([^\s]+) ([^\s]+)$/i, (msg) ->
     return unless isAuthorized robot, msg
