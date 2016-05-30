@@ -30,10 +30,11 @@ module.exports = (robot) ->
       "#{tfName} create key - create rsa key, for git operations"
       "#{tfName} destroy key - erase key"
       "#{tfName} show key - display public key"
-      "#{tfName} clone <repourl> <projectname>"
+      "#{tfName} clone <repourl> <projectname> - clone git repo into projectname directory"
       "#{tfName} (plan|refresh|apply|get|destroy) <projectname> - tf operations"
-      "#{tfName} env <projectname> set <key>=<value>"
-      "#{tfName} env <projectname> unset <key>"
+      "#{tfName} env <projectname> set <key>=<value> - set env var"
+      "#{tfName} env <projectname> unset <key> - unset environmental variable"
+      "#{tfName} env <projectname> list - show env for project"
     ]
 
     for str in arr
