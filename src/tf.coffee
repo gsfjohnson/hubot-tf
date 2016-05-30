@@ -23,16 +23,11 @@ publickey = privatekey + ".pub"
 tfName = tfRole = 'tf'
 
 sendqueue = []
+servicequeue = ->
+  obj = sendqueue.shift()
+  obj['msg'].send {room: msg.message.user.name}, obj['out']
 
 module.exports = (robot) ->
-
-  servicequeue = ->
-    obj = sendqueue.shift()
-    msg = obj['msg']
-    room = obj['room']
-    out = obj['out']
-    console.log JSON.stringify room
-    msg.send {room: room}, out
 
   robot.respond /tf help$/, (msg) ->
     cmds = []
@@ -150,12 +145,13 @@ module.exports = (robot) ->
     return exec "cd #{basepath}; rm -rf #{projname}", (error, stdout, stderr) ->
       msg.send {room: msg.message.user.name}, "Project deleted: #{projname}"
 
-  robot.respond /tf (plan|refresh|apply|destroy) ([^\s]+)$/i, (msg) ->
+  robot.respond /tf (plan|refresh|apply|destroy) ([^\s]+)( verbose)?$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
       return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
 
     action = msg.match[1]
     projname = msg.match[2].replace /\//, "_"
+    verbose = true if msg.match[3]
 
     unless fs.existsSync("#{basepath}/#{projname}")
       return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
@@ -176,21 +172,21 @@ module.exports = (robot) ->
       if stdout
         if stdout.length < 1024
           return msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
+        else unless verbose
+          return msg.send {room: msg.message.user.name}, "```\n#{line}\n```" if line.match /^Plan: / for line in stdout.split "\n"
         out = []
         waitms = 200
         textchunk = ''
         for line in stdout.split "\n"
-          if line.match /^\+\s/
+          if line.match /^(?:\+\s|Plan: )/
             textchunk = out.join "\n"
-            sendqueue.push { msg: msg, room: msg.message.user.id, out: "```\n#{textchunk}\n```" }
-            console.log textchunk
+            sendqueue.push { msg: msg, out: "```\n#{textchunk}\n```" }
             setTimeout servicequeue, waitms
             waitms = waitms + 200
             out = []
           out.push line
         textchunk = out.join "\n"
-        console.log textchunk
-        sendqueue.push { msg: msg, room: msg.message.user.id, out: "```\n#{textchunk}\n```" }
+        sendqueue.push { msg: msg, out: "```\n#{textchunk}\n```" }
         setTimeout servicequeue, waitms
 
   robot.respond /tf env ([^\s]+) set ([^\s]+)=(.+)$/i, (msg) ->
