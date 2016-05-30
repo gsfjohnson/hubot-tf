@@ -209,4 +209,5 @@ module.exports = (robot) ->
 
     ekvs = [ "`#{projname}` env:" ]
     ekvs.push "  `#{k}` = `#{v}`" for k,v of localstorage
+    ekvs = [ "No environment variables." ] unless ekvs.length > 1
     return msg.send {room: msg.message.user.name}, ekvs.join "\n"
