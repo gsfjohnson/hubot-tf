@@ -27,11 +27,12 @@ sendqueue = []
 module.exports = (robot) ->
 
   servicequeue = ->
-    obj = sendqueue.shift
-    room = obj[room]
-    out = obj[out]
-    console.log JSON.stringify obj
-    robot.send {room: room}, out
+    obj = sendqueue.shift()
+    msg = obj['msg']
+    room = obj['room']
+    out = obj['out']
+    console.log JSON.stringify room
+    msg.send {room: room}, out
 
   robot.respond /tf help$/, (msg) ->
     cmds = []
@@ -181,7 +182,7 @@ module.exports = (robot) ->
         for line in stdout.split "\n"
           if line.match /^\+\s/
             textchunk = out.join "\n"
-            sendqueue.push { room: msg.message.user.id, out: "```\n#{textchunk}\n```" }
+            sendqueue.push { msg: msg, room: msg.message.user.id, out: "```\n#{textchunk}\n```" }
             console.log textchunk
             setTimeout servicequeue, waitms
             waitms = waitms + 200
@@ -189,7 +190,7 @@ module.exports = (robot) ->
           out.push line
         textchunk = out.join "\n"
         console.log textchunk
-        sendqueue.push { room: msg.message.user.id, out: "```\n#{textchunk}\n```" }
+        sendqueue.push { msg: msg, room: msg.message.user.id, out: "```\n#{textchunk}\n```" }
         setTimeout servicequeue, waitms
 
   robot.respond /tf env ([^\s]+) set ([^\s]+)=(.+)$/i, (msg) ->
