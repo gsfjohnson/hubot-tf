@@ -204,5 +204,5 @@ module.exports = (robot) ->
 
     msg.send {room: msg.message.user.name}, "```\n#{JSON.stringify(localstorage)}\n```"
     ekvs = [ "`#{projname}` env set:" ]
-    ekvs.push "  `#{ekey}` = `#{localstorage[ekey]}`" for ekey in localstorage
+    ekvs.push "  `#{k}` = `#{v}`" for k,v of localstorage
     return msg.send {room: msg.message.user.name}, ekvs.join "\n"
