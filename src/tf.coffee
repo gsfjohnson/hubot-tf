@@ -72,8 +72,7 @@ module.exports = (robot) ->
       msg.send {room: msg.message.user.name}, "```\n#{pubkey}\n```"
 
   robot.respond /tf show key$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+    return unless isAuthorized robot, msg
 
     if ! fs.existsSync("#{publickey}")
       return msg.send {room: msg.message.user.name}, "No key on file!  Create one first."
@@ -82,8 +81,7 @@ module.exports = (robot) ->
     return msg.send {room: msg.message.user.name}, "```\n#{pubkey}\n```"
 
   robot.respond /tf destroy key$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+    return unless isAuthorized robot, msg
 
     if ! fs.existsSync("#{publickey}")
       return msg.send {room: msg.message.user.name}, "No key on file!  Create one first."
@@ -93,8 +91,7 @@ module.exports = (robot) ->
     return msg.send {room: msg.message.user.name}, "Key destroyed!"
 
   robot.respond /tf clone ([^\s]+) ([^\s]+)$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+    return unless isAuthorized robot, msg
 
     url = msg.match[1]
     projname = msg.match[2].replace /\//, "_"
@@ -113,8 +110,7 @@ module.exports = (robot) ->
         msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
 
   robot.respond /tf list(\sprojects)?$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+    return unless isAuthorized robot, msg
 
     dir = []
     for fn in fs.readdirSync(basepath)
@@ -124,8 +120,7 @@ module.exports = (robot) ->
     return msg.send {room: msg.message.user.name}, dir.join "\n"
 
   robot.respond /tf remote ([^\s]+)$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+    return unless isAuthorized robot, msg
 
     projname = msg.match[1].replace /\//, "_"
 
@@ -141,8 +136,7 @@ module.exports = (robot) ->
         msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
 
   robot.respond /tf (get) ([^\s]+)$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+    return unless isAuthorized robot, msg
 
     action = msg.match[1]
     projname = msg.match[2].replace /\//, "_"
@@ -159,8 +153,7 @@ module.exports = (robot) ->
         msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
 
   robot.respond /tf delete ([^\s]+)$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+    return unless isAuthorized robot, msg
 
     projname = msg.match[1].replace /\//, "_"
 
@@ -171,8 +164,7 @@ module.exports = (robot) ->
       msg.send {room: msg.message.user.name}, "Project deleted: #{projname}"
 
   robot.respond /tf (plan|refresh|apply|destroy) ([^\s]+)( verbose)?$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+    return unless isAuthorized robot, msg
 
     action = msg.match[1]
     projname = msg.match[2].replace /\//, "_"
@@ -220,8 +212,7 @@ module.exports = (robot) ->
         msg.send {room: msg.message.user.name}, "error:\n```\n#{error}\n```"
 
   robot.respond /tf env ([^\s]+) set ([^\s]+)=(.+)$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+    return unless isAuthorized robot, msg
 
     projname = msg.match[1].replace /\//, "_"
     ekey = msg.match[2]
@@ -239,8 +230,7 @@ module.exports = (robot) ->
     return msg.send {room: msg.message.user.name}, "`#{projname}` env set: `#{ekey}` = `#{evalue}`"
 
   robot.respond /tf env ([^\s]+) unset ([^\s]+)$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+    return unless isAuthorized robot, msg
 
     projname = msg.match[1].replace /\//, "_"
     ekey = msg.match[2]
@@ -257,8 +247,7 @@ module.exports = (robot) ->
     return msg.send {room: msg.message.user.name}, "`#{projname}` env `#{ekey}` unset."
 
   robot.respond /tf env ([^\s]+)(?:\slist)?$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+    return unless isAuthorized robot, msg
 
     projname = msg.match[1].replace /\//, "_"
 
