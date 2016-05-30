@@ -153,7 +153,7 @@ module.exports = (robot) ->
     brainloc = "hubot-tf_#{projname}"
     localstorage = JSON.parse(robot.brain.get brainloc) or {}
     ekvs = []
-    ekvs.push "#{k}=#{v}" for k,v of localstorage
+    ekvs.push "TF_VAR_#{k}=#{v}" for k,v of localstorage
     environment = ekvs.join " "
 
     cmdline = "cd #{basepath}/#{projname}; #{environment} terraform #{action} -input=false -no-color"
