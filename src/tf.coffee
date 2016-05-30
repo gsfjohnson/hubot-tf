@@ -26,8 +26,9 @@ sendqueue = []
 servicequeue = ->
   obj = sendqueue.pop
   msg = obj[msg]
+  room = obj[room]
   out = obj[out]
-  msg.send {room: msg.message.user.name}, out
+  msg.send {room: room}, out
 
 module.exports = (robot) ->
 
@@ -178,16 +179,16 @@ module.exports = (robot) ->
         msg = ''
         for line in stdout.split "\n"
           if line.match /^\+\s/
-            msg = out.join "\n"
-            sendqueue.push { msg: msg, out: "```\n#{msg}\n```" }
-            console.log msg
+            textchunk = out.join "\n"
+            sendqueue.push { msg: msg, room: msg.message.user.name, out: "```\n#{textchunk}\n```" }
+            console.log textchunk
             setTimeout servicequeue, waitms
             waitms = waitms + 200
             out = []
           out.push line
-        msg = out.join "\n"
-        console.log msg
-        sendqueue.push { msg: msg, out: "```\n#{msg}\n```" }
+        textchunk = out.join "\n"
+        console.log textchunk
+        sendqueue.push { msg: msg, room: msg.message.user.name, out: "```\n#{textchunk}\n```" }
         setTimeout servicequeue, waitms
 
   robot.respond /tf env ([^\s]+) set ([^\s]+)=(.+)$/i, (msg) ->
