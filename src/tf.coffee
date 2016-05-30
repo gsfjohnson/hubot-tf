@@ -35,6 +35,19 @@ isAuthorized = (robot, msg) ->
   msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
   return false
 
+fileExistsSendAndReturnTrue = (msg, file, failresponse) ->
+  if fs.existsSync file
+    msg.send {room: msg.message.user.name}, failresponse
+    return true
+  return false  # does not exist
+
+fileMissingSendAndReturnTrue = (msg, file, failresponse) ->
+  if ! fs.existsSync file
+    msg.send {room: msg.message.user.name}, failresponse
+    return true
+  return false  # file exists
+
+
 module.exports = (robot) ->
 
   robot.respond /tf help$/, (msg) ->
@@ -62,9 +75,7 @@ module.exports = (robot) ->
 
   robot.respond /tf create key$/i, (msg) ->
     return unless isAuthorized robot, msg
-
-    if fs.existsSync("#{publickey}")
-      return msg.send {room: msg.message.user.name}, "Key exists!  Destroy it first."
+    return if fileExistsSendAndReturnTrue msg, publickey, "Key exists!  Destroy it first."
 
     exec "ssh-keygen -f #{privatekey} -b 1024 -C hubot-tf -N ''", (error, stdout, stderr) ->
       #msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
@@ -73,18 +84,14 @@ module.exports = (robot) ->
 
   robot.respond /tf show key$/i, (msg) ->
     return unless isAuthorized robot, msg
-
-    if ! fs.existsSync("#{publickey}")
-      return msg.send {room: msg.message.user.name}, "No key on file!  Create one first."
+    return if fileMissingSendAndReturnTrue msg, publickey, "No key on file!  Create one first."
 
     pubkey = fs.readFileSync("#{publickey}", 'utf-8').toString()
     return msg.send {room: msg.message.user.name}, "```\n#{pubkey}\n```"
 
   robot.respond /tf destroy key$/i, (msg) ->
     return unless isAuthorized robot, msg
-
-    if ! fs.existsSync("#{publickey}")
-      return msg.send {room: msg.message.user.name}, "No key on file!  Create one first."
+    return if fileMissingSendAndReturnTrue msg, publickey, "No key on file!  Create one first."
 
     fs.unlinkSync("#{privatekey}")
     fs.unlinkSync("#{publickey}")
@@ -120,12 +127,9 @@ module.exports = (robot) ->
     return msg.send {room: msg.message.user.name}, dir.join "\n"
 
   robot.respond /tf remote ([^\s]+)$/i, (msg) ->
-    return unless isAuthorized robot, msg
-
     projname = msg.match[1].replace /\//, "_"
-
-    unless fs.existsSync("#{basepath}/#{projname}")
-      return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
+    return unless isAuthorized robot, msg
+    return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
 
     exec "cd #{basepath}/#{projname} ; git remote -v", (error, stdout, stderr) ->
       if stderr
@@ -136,13 +140,10 @@ module.exports = (robot) ->
         msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
 
   robot.respond /tf (get) ([^\s]+)$/i, (msg) ->
-    return unless isAuthorized robot, msg
-
     action = msg.match[1]
     projname = msg.match[2].replace /\//, "_"
-
-    unless fs.existsSync("#{basepath}/#{projname}")
-      return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
+    return unless isAuthorized robot, msg
+    return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
 
     exec "cd #{basepath}/#{projname}; terraform #{action} -no-color", (error, stdout, stderr) ->
       if stderr
@@ -153,25 +154,19 @@ module.exports = (robot) ->
         msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
 
   robot.respond /tf delete ([^\s]+)$/i, (msg) ->
-    return unless isAuthorized robot, msg
-
     projname = msg.match[1].replace /\//, "_"
-
-    unless fs.existsSync("#{basepath}/#{projname}")
-      return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
+    return unless isAuthorized robot, msg
+    return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
 
     return exec "cd #{basepath}; rm -rf #{projname}", (error, stdout, stderr) ->
       msg.send {room: msg.message.user.name}, "Project deleted: #{projname}"
 
   robot.respond /tf (plan|refresh|apply|destroy) ([^\s]+)( verbose)?$/i, (msg) ->
-    return unless isAuthorized robot, msg
-
     action = msg.match[1]
     projname = msg.match[2].replace /\//, "_"
     verbose = true if msg.match[3]
-
-    unless fs.existsSync("#{basepath}/#{projname}")
-      return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
+    return unless isAuthorized robot, msg
+    return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
 
     brainloc = "hubot-tf_#{projname}"
     localstorage = JSON.parse(robot.brain.get brainloc) or {}
@@ -212,14 +207,11 @@ module.exports = (robot) ->
         msg.send {room: msg.message.user.name}, "error:\n```\n#{error}\n```"
 
   robot.respond /tf env ([^\s]+) set ([^\s]+)=(.+)$/i, (msg) ->
-    return unless isAuthorized robot, msg
-
     projname = msg.match[1].replace /\//, "_"
     ekey = msg.match[2]
     evalue = msg.match[3]
-
-    unless fs.existsSync("#{basepath}/#{projname}")
-      return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
+    return unless isAuthorized robot, msg
+    return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
 
     brainloc = "hubot-tf_#{projname}"
     localstorage = JSON.parse(robot.brain.get brainloc) or {}
@@ -230,13 +222,10 @@ module.exports = (robot) ->
     return msg.send {room: msg.message.user.name}, "`#{projname}` env set: `#{ekey}` = `#{evalue}`"
 
   robot.respond /tf env ([^\s]+) unset ([^\s]+)$/i, (msg) ->
-    return unless isAuthorized robot, msg
-
     projname = msg.match[1].replace /\//, "_"
     ekey = msg.match[2]
-
-    unless fs.existsSync("#{basepath}/#{projname}")
-      return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
+    return unless isAuthorized robot, msg
+    return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
 
     brainloc = "hubot-tf_#{projname}"
     localstorage = JSON.parse(robot.brain.get brainloc) or {}
@@ -247,12 +236,9 @@ module.exports = (robot) ->
     return msg.send {room: msg.message.user.name}, "`#{projname}` env `#{ekey}` unset."
 
   robot.respond /tf env ([^\s]+)(?:\slist)?$/i, (msg) ->
-    return unless isAuthorized robot, msg
-
     projname = msg.match[1].replace /\//, "_"
-
-    unless fs.existsSync("#{basepath}/#{projname}")
-      return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
+    return unless isAuthorized robot, msg
+    return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
 
     brainloc = "hubot-tf_#{projname}"
     localstorage = JSON.parse(robot.brain.get brainloc) or {}
