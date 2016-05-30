@@ -124,7 +124,7 @@ module.exports = (robot) ->
       stat = fs.statSync("#{basepath}/#{fn}")
       dir.push fn if stat.isDirectory()
 
-    return msg.send {room: msg.message.user.name}, dir.join "\n"
+    return msg.send {room: msg.message.user.name}, "Projects: `"+ dir.join "`, `" +"`"
 
   robot.respond /tf remote ([^\s]+)$/i, (msg) ->
     projname = msg.match[1].replace /\//, "_"
