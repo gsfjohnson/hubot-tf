@@ -168,10 +168,6 @@ module.exports = (robot) ->
     cmdline = "#{cmdline} -force" if action == 'destroy'
     msg.send {room: msg.message.user.name}, "```\n#{cmdline}\n```"
     exec cmdline, (error, stdout, stderr) ->
-      if stderr
-        msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
-      else if error
-        msg.send {room: msg.message.user.name}, "error:\n```\n#{error}\n```"
       if stdout
         if stdout.length < 1024
           return msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
@@ -195,6 +191,10 @@ module.exports = (robot) ->
         textchunk = out.join "\n"
         sendqueue.push { msg: msg, out: "```\n#{textchunk}\n```" }
         setTimeout servicequeue, waitms
+      if stderr
+        msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
+      else if error
+        msg.send {room: msg.message.user.name}, "error:\n```\n#{error}\n```"
 
   robot.respond /tf env ([^\s]+) set ([^\s]+)=(.+)$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
