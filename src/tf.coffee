@@ -164,7 +164,15 @@ module.exports = (robot) ->
       else if error
         msg.send {room: msg.message.user.name}, "error:\n```\n#{error}\n```"
       if stdout
-        msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
+        if stdout.length < 1024
+          return msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
+        out = []
+        for line in stdout.split "\n"
+          if line.match /^\+\s/
+            msg.send {room: msg.message.user.name}, "```\n#{out.join "\n"}\n```"
+            out = []
+          out.push line
+        msg.send {room: msg.message.user.name}, "```\n#{out.join "\n"}\n```"
 
   robot.respond /tf env ([^\s]+) set ([^\s]+)=(.+)$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
