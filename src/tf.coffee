@@ -29,6 +29,12 @@ servicequeue = ->
   out = o['out']
   msg.send {room: msg.message.user.name}, out
 
+isAuthorized = (robot, msg) ->
+  if robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
+    return true
+  msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+  return false
+
 module.exports = (robot) ->
 
   robot.respond /tf help$/, (msg) ->
@@ -55,8 +61,7 @@ module.exports = (robot) ->
       msg.reply cmds.join "\n"
 
   robot.respond /tf create key$/i, (msg) ->
-    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
-      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+    return unless isAuthorized robot, msg
 
     if fs.existsSync("#{publickey}")
       return msg.send {room: msg.message.user.name}, "Key exists!  Destroy it first."
