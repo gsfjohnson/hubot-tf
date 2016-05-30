@@ -25,7 +25,8 @@ tfName = tfRole = 'tf'
 sendqueue = []
 servicequeue = ->
   obj = sendqueue.shift()
-  obj['msg'].send {room: msg.message.user.name}, obj['out']
+  console.log JSON.stringify obj
+  obj['msg'].send {room: obj['msg'].message.user.name}, obj['out']
 
 module.exports = (robot) ->
 
