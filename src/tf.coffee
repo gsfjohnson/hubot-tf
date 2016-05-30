@@ -32,6 +32,8 @@ module.exports = (robot) ->
       "#{tfName} show key - display public key"
       "#{tfName} clone <repourl> <projectname>"
       "#{tfName} (plan|refresh|apply|get|destroy) <projectname> - tf operations"
+      "#{tfName} env <projectname> set <key>=<value>"
+      "#{tfName} env <projectname> unset <key>"
     ]
 
     for str in arr
@@ -136,3 +138,22 @@ module.exports = (robot) ->
         msg.send {room: msg.message.user.name}, "error:\n```\n#{error}\n```"
       if stdout
         msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
+
+  robot.respond /tf env ([^\s]+) set ([^\s]+)=(.+)$/i, (msg) ->
+    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
+      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+
+    projname = msg.match[1].replace /\//, "_"
+    ekey = msg.match[2]
+    evalue = msg.match[3]
+
+    return msg.send {room: msg.message.user.name}, "Environmental variable set: #{ekey}=#{evalue}"
+
+  robot.respond /tf env ([^\s]+) unset ([^\s]+)$/i, (msg) ->
+    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
+      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+
+    projname = msg.match[1].replace /\//, "_"
+    ekey = msg.match[2]
+
+    return msg.send {room: msg.message.user.name}, "Environmental variable unset: #{ekey}"
