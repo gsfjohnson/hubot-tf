@@ -27,9 +27,7 @@ module.exports = (robot) ->
   robot.respond /tf help$/, (msg) ->
     cmds = []
     arr = [
-      "#{tfName} create key - create rsa key, for git operations"
-      "#{tfName} destroy key - erase key"
-      "#{tfName} show key - display public key"
+      "#{tfName} (create|show|destroy) key - rsa key operations, for git"
       "#{tfName} clone <repourl> <projectname> - clone git repo into projectname directory"
       "#{tfName} (plan|refresh|apply|get|destroy) <projectname> - tf operations"
       "#{tfName} env <projectname> set <key>=<value> - set env var"
