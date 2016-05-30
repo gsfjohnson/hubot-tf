@@ -27,9 +27,10 @@ sendqueue = []
 module.exports = (robot) ->
 
   servicequeue = ->
-    obj = sendqueue.pop
+    obj = sendqueue.shift
     room = obj[room]
     out = obj[out]
+    console.log JSON.stringify obj
     robot.send {room: room}, out
 
   robot.respond /tf help$/, (msg) ->
