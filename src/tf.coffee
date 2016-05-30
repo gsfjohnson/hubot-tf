@@ -47,6 +47,14 @@ fileMissingSendAndReturnTrue = (msg, file, failresponse) ->
     return true
   return false  # file exists
 
+execAndSendOutput = (msg, cmd) ->
+  exec cmd, (error, stdout, stderr) ->
+    if stderr
+      msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
+    else if error
+      msg.send {room: msg.message.user.name}, "Error: #{error}"
+    if stdout
+      msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
 
 module.exports = (robot) ->
 
@@ -108,13 +116,8 @@ module.exports = (robot) ->
     #fn.replace /\//, "_"
     fp = basepath + "/hubot-tf"
 
-    exec "GIT_SSH_COMMAND='ssh -i #{privatekey} -F /dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' git clone #{url} #{projpath}", (error, stdout, stderr) ->
-      if stderr
-        msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
-      else if error
-        msg.send {room: msg.message.user.name}, "Error: #{error}"
-      if stdout
-        msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
+    cmd = "GIT_SSH_COMMAND='ssh -i #{privatekey} -F /dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' git clone #{url} #{projpath}"
+    execAndSendOutput msg, cmd
 
   robot.respond /tf list(\sprojects)?$/i, (msg) ->
     return unless isAuthorized robot, msg
@@ -127,18 +130,16 @@ module.exports = (robot) ->
     out = dir.join "`, `"
     return msg.send {room: msg.message.user.name}, "Projects: `#{out}`"
 
-  robot.respond /tf remote ([^\s]+)$/i, (msg) ->
-    projname = msg.match[1].replace /\//, "_"
+  robot.respond /tf (remote|pull) ([^\s]+)$/i, (msg) ->
+    action = msg.match[1]
+    projname = msg.match[2].replace /\//, "_"
     return unless isAuthorized robot, msg
     return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
 
-    exec "cd #{basepath}/#{projname} ; git remote -v", (error, stdout, stderr) ->
-      if stderr
-        msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
-      else if error
-        msg.send {room: msg.message.user.name}, "Error: #{error}"
-      if stdout
-        msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
+    gitcmd = "git remote -v" if action == 'remote'
+    gitcmd = "git pull" if action == 'pull'
+    cmd = "cd #{basepath}/#{projname} ; #{gitcmd}"
+    execAndSendOutput msg, cmd
 
   robot.respond /tf (get) ([^\s]+)$/i, (msg) ->
     action = msg.match[1]
@@ -146,13 +147,8 @@ module.exports = (robot) ->
     return unless isAuthorized robot, msg
     return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
 
-    exec "cd #{basepath}/#{projname}; terraform #{action} -no-color", (error, stdout, stderr) ->
-      if stderr
-        msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
-      else if error
-        msg.send {room: msg.message.user.name}, "error:\n```\n#{error}\n```"
-      if stdout
-        msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
+    cmd = "cd #{basepath}/#{projname}; terraform #{action} -no-color"
+    execAndSendOutput msg, cmd
 
   robot.respond /tf delete ([^\s]+)$/i, (msg) ->
     projname = msg.match[1].replace /\//, "_"
