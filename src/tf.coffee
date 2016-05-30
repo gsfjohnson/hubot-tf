@@ -153,7 +153,7 @@ module.exports = (robot) ->
     brainloc = "hubot-tf_#{projname}"
     localstorage = JSON.parse(robot.brain.get brainloc) or {}
     ekvs = []
-    ekvs.push "TF_VAR_#{k}=#{v}" for k,v of localstorage
+    ekvs.push "#{k}=#{v}" for k,v of localstorage
     environment = ekvs.join " "
 
     cmdline = "cd #{basepath}/#{projname}; #{environment} terraform #{action} -input=false -no-color"
@@ -201,7 +201,7 @@ module.exports = (robot) ->
     robot.brain.set brainloc, JSON.stringify(localstorage)
     robot.brain.save()
 
-    return msg.send {room: msg.message.user.name}, "`#{projname}` env unset: `#{ekey}`"
+    return msg.send {room: msg.message.user.name}, "`#{projname}` env `#{ekey}` unset."
 
   robot.respond /tf env ([^\s]+)(?:\slist)?$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
