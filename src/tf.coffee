@@ -107,7 +107,7 @@ module.exports = (robot) ->
 
     return msg.send {room: msg.message.user.name}, dir.join "\n"
 
-  robot.respond /tf get ([^\s]+)$/i, (msg) ->
+  robot.respond /tf (get) ([^\s]+)$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
       return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
 
