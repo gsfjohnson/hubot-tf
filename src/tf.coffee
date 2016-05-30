@@ -189,3 +189,20 @@ module.exports = (robot) ->
       return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
 
     return msg.send {room: msg.message.user.name}, "`#{projname}` env unset: `#{ekey}`"
+
+  robot.respond /tf env ([^\s]+)(?:\slist)?$/i, (msg) ->
+    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
+      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+
+    projname = msg.match[1].replace /\//, "_"
+
+    unless fs.existsSync("#{basepath}/#{projname}")
+      return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
+
+    brainloc = "hubot-tf_#{projname}"
+    localstorage = JSON.parse(robot.brain.get brainloc) or {}
+
+    msg.send {room: msg.message.user.name}, "```\n#{JSON.stringify(localstorage)}\n```"
+    ekvs = [ "`#{projname}` env set:" ]
+    ekvs.push "  `#{ekey}` = `#{localstorage[ekey]}`" for ekey in localstorage
+    return msg.send {room: msg.message.user.name}, ekvs.join "\n"
