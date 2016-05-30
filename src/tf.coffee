@@ -165,7 +165,8 @@ module.exports = (robot) ->
     environment = ekvs.join " "
 
     cmdline = "cd #{basepath}/#{projname}; #{environment} terraform #{action} -input=false -no-color"
-    #msg.send {room: msg.message.user.name}, "```\n#{cmdline}\n```"
+    cmdline = "#{cmdline} -force" if action == 'delete'
+    msg.send {room: msg.message.user.name}, "```\n#{cmdline}\n```"
     exec cmdline, (error, stdout, stderr) ->
       if stderr
         msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
