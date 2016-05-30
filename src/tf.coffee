@@ -8,7 +8,7 @@
 #   None
 #
 # Commands:
-#   tf help - list commands
+#   hubot tf help - list commands
 #
 # Author:
 #   gsfjohnson
