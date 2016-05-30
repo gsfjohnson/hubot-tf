@@ -147,7 +147,7 @@ module.exports = (robot) ->
     ekey = msg.match[2]
     evalue = msg.match[3]
 
-    return msg.send {room: msg.message.user.name}, "Environmental variable set: `#{ekey}` = `#{evalue}`"
+    return msg.send {room: msg.message.user.name}, "`#{projname}` env set: `#{ekey}` = `#{evalue}`"
 
   robot.respond /tf env ([^\s]+) unset ([^\s]+)$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
@@ -156,4 +156,4 @@ module.exports = (robot) ->
     projname = msg.match[1].replace /\//, "_"
     ekey = msg.match[2]
 
-    return msg.send {room: msg.message.user.name}, "Environmental variable unset: `#{ekey}`"
+    return msg.send {room: msg.message.user.name}, "`#{projname}` env unset: `#{ekey}`"
