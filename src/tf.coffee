@@ -27,7 +27,6 @@ servicequeue = ->
   o = sendqueue.shift()
   msg = o['msg']
   out = o['out']
-  console.log JSON.stringify o
   msg.send {room: msg.message.user.name}, out
 
 module.exports = (robot) ->
@@ -176,16 +175,20 @@ module.exports = (robot) ->
         if stdout.length < 1024
           return msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
         else unless verbose
-          return msg.send {room: msg.message.user.name}, "```\n#{line}\n```" if line.match /^Plan: / for line in stdout.split "\n"
+          out = 'Error'
+          for line in stdout.split "\n"
+            if line.match /^Plan: /
+              out = line
+          return msg.send {room: msg.message.user.name}, "```\n#{out}\n```"
         out = []
-        waitms = 200
+        waitms = 333
         textchunk = ''
         for line in stdout.split "\n"
           if line.match /^(?:\+\s|Plan: )/
             textchunk = out.join "\n"
             sendqueue.push { msg: msg, out: "```\n#{textchunk}\n```" }
             setTimeout servicequeue, waitms
-            waitms = waitms + 200
+            waitms = waitms + 333
             out = []
           out.push line
         textchunk = out.join "\n"
