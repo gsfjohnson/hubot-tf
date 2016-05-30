@@ -116,7 +116,7 @@ module.exports = (robot) ->
     projname = msg.match[2].replace /\//, "_"
 
     unless fs.existsSync("#{basepath}/#{projname}")
-      return msg.send {room: msg.message.user.name}, "Invalid project name."
+      return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
 
     exec "cd #{basepath}/#{projname}; terraform #{action} -no-color", (error, stdout, stderr) ->
       if stderr
@@ -134,7 +134,7 @@ module.exports = (robot) ->
     projname = msg.match[2].replace /\//, "_"
 
     unless fs.existsSync("#{basepath}/#{projname}")
-      return msg.send {room: msg.message.user.name}, "Invalid project name."
+      return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
 
     exec "cd #{basepath}/#{projname}; terraform #{action} -input=false -no-color", (error, stdout, stderr) ->
       if stderr
@@ -153,7 +153,7 @@ module.exports = (robot) ->
     evalue = msg.match[3]
 
     unless fs.existsSync("#{basepath}/#{projname}")
-      return msg.send {room: msg.message.user.name}, "Invalid project name."
+      return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
 
     return msg.send {room: msg.message.user.name}, "`#{projname}` env set: `#{ekey}` = `#{evalue}`"
 
@@ -165,6 +165,6 @@ module.exports = (robot) ->
     ekey = msg.match[2]
 
     unless fs.existsSync("#{basepath}/#{projname}")
-      return msg.send {room: msg.message.user.name}, "Invalid project name."
+      return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
 
     return msg.send {room: msg.message.user.name}, "`#{projname}` env unset: `#{ekey}`"
