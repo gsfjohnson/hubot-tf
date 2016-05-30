@@ -141,13 +141,18 @@ module.exports = (robot) ->
     cmd = "cd #{basepath}/#{projname} ; #{gitcmd}"
     execAndSendOutput msg, cmd
 
-  robot.respond /tf (get) ([^\s]+)$/i, (msg) ->
+  robot.respond /tf (get) ([^\s]+)( update)?$/i, (msg) ->
     action = msg.match[1]
     projname = msg.match[2].replace /\//, "_"
+    update = if msg.match[3] then true else false
     return unless isAuthorized robot, msg
     return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
 
-    cmd = "cd #{basepath}/#{projname}; terraform #{action} -no-color"
+    params = [ "-no-color" ]
+    params.push "-update=true" if update
+    paramline = params.join " "
+
+    cmd = "cd #{basepath}/#{projname}; terraform #{action} #{paramline}"
     execAndSendOutput msg, cmd
 
   robot.respond /tf delete ([^\s]+)$/i, (msg) ->
@@ -171,7 +176,12 @@ module.exports = (robot) ->
     ekvs.push "#{k}=#{v}" for k,v of localstorage
     environment = ekvs.join " "
 
-    cmdline = "cd #{basepath}/#{projname}; #{environment} terraform #{action} -input=false -no-color"
+    params = []
+    params.push "-input=false"
+    params.push "-no-color"
+    paramline = params.join " "
+
+    cmdline = "cd #{basepath}/#{projname}; #{environment} terraform #{action} #{paramline}"
     cmdline = "#{cmdline} -force" if action == 'destroy'
     msg.send {room: msg.message.user.name}, "```\n#{cmdline}\n```"
     exec cmdline, (error, stdout, stderr) ->
