@@ -29,6 +29,8 @@ module.exports = (robot) ->
     arr = [
       "#{tfName} (create|show|destroy) key - rsa key operations, for git"
       "#{tfName} clone <repourl> <projectname> - clone git repo into projectname directory"
+      "#{tfName} list projects - enumerate projects"
+      "#{tfName} delete <projectname> - erase <projectname> files"
       "#{tfName} (plan|refresh|apply|get|destroy) <projectname> - tf operations"
       "#{tfName} env <projectname> set <key>=<value> - set env var"
       "#{tfName} env <projectname> unset <key> - unset environmental variable"
@@ -125,6 +127,18 @@ module.exports = (robot) ->
         msg.send {room: msg.message.user.name}, "error:\n```\n#{error}\n```"
       if stdout
         msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
+
+  robot.respond /tf delete ([^\s]+)$/i, (msg) ->
+    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
+      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+
+    projname = msg.match[1].replace /\//, "_"
+
+    unless fs.existsSync("#{basepath}/#{projname}")
+      return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
+
+    return exec "cd #{basepath}; rm -rf #{projname}", (error, stdout, stderr) ->
+      msg.send {room: msg.message.user.name}, "Project deleted: #{projname}"
 
   robot.respond /tf (plan|refresh|apply|destroy) ([^\s]+)$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
