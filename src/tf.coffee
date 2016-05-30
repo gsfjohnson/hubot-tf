@@ -176,7 +176,7 @@ module.exports = (robot) ->
           return msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
         out = []
         waitms = 200
-        msg = ''
+        textchunk = ''
         for line in stdout.split "\n"
           if line.match /^\+\s/
             textchunk = out.join "\n"
