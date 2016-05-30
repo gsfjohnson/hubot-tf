@@ -169,6 +169,13 @@ module.exports = (robot) ->
     unless fs.existsSync("#{basepath}/#{projname}")
       return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
 
+    brainloc = "hubot-tf_#{projname}"
+    localstorage = JSON.parse(robot.brain.get brainloc) or {}
+    localstorage[ekey] = evalue
+    robot.brain.set brainloc, JSON.stringify(localstorage)
+    robot.brain.save()
+
+    msg.send {room: msg.message.user.name}, "```\n#{JSON.stringify(localstorage)}\n```"
     return msg.send {room: msg.message.user.name}, "`#{projname}` env set: `#{ekey}` = `#{evalue}`"
 
   robot.respond /tf env ([^\s]+) unset ([^\s]+)$/i, (msg) ->
