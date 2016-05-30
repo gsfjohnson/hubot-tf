@@ -150,7 +150,15 @@ module.exports = (robot) ->
     unless fs.existsSync("#{basepath}/#{projname}")
       return msg.send {room: msg.message.user.name}, "Invalid project name: `#{projname}`"
 
-    exec "cd #{basepath}/#{projname}; terraform #{action} -input=false -no-color", (error, stdout, stderr) ->
+    brainloc = "hubot-tf_#{projname}"
+    localstorage = JSON.parse(robot.brain.get brainloc) or {}
+    ekvs = []
+    ekvs.push "#{k}=#{v}" for k,v of localstorage
+    environment = ekvs.join " "
+
+    cmdline = "cd #{basepath}/#{projname}; #{environment} terraform #{action} -input=false -no-color"
+    msg.send {room: msg.message.user.name}, "```\n#{cmdline}\n```"
+    exec cmdline, (error, stdout, stderr) ->
       if stderr
         msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
       else if error
@@ -209,5 +217,5 @@ module.exports = (robot) ->
 
     ekvs = [ "`#{projname}` env:" ]
     ekvs.push "  `#{k}` = `#{v}`" for k,v of localstorage
-    ekvs = [ "No environment variables." ] unless ekvs.length > 1
+    ekvs = [ "No environment variables for `#{projname}`." ] unless ekvs.length > 1
     return msg.send {room: msg.message.user.name}, ekvs.join "\n"
