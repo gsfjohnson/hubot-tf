@@ -107,15 +107,29 @@ module.exports = (robot) ->
 
     return msg.send {room: msg.message.user.name}, dir.join "\n"
 
-  robot.respond /tf (plan|refresh|apply|get|destroy) ([^\s]+)$/i, (msg) ->
+  robot.respond /tf get ([^\s]+)$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
       return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
 
     action = msg.match[1]
     projname = msg.match[2].replace /\//, "_"
-    msg.send {room: msg.message.user.name}, projname
 
     exec "cd #{basepath}/#{projname}; terraform #{action} -input=false -no-color", (error, stdout, stderr) ->
+      if stderr
+        msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
+      else if error
+        msg.send {room: msg.message.user.name}, "error:\n```\n#{error}\n```"
+      if stdout
+        msg.send {room: msg.message.user.name}, "stdout:\n```\n#{stdout}\n```"
+
+  robot.respond /tf (plan|refresh|apply|destroy) ([^\s]+)$/i, (msg) ->
+    unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
+      return msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+
+    action = msg.match[1]
+    projname = msg.match[2].replace /\//, "_"
+
+    exec "cd #{basepath}/#{projname}; terraform #{action} -no-color", (error, stdout, stderr) ->
       if stderr
         msg.send {room: msg.message.user.name}, "stderr:\n```\n#{stderr}\n```"
       else if error
