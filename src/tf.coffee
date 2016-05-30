@@ -94,7 +94,7 @@ module.exports = (robot) ->
       else if error
         msg.send {room: msg.message.user.name}, "Error: #{error}"
       if stdout
-        msg.send {room: msg.message.user.name}, "stdout:\n```\n#{stdout}\n```"
+        msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
 
   robot.respond /tf list(\sprojects)?$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
@@ -120,7 +120,7 @@ module.exports = (robot) ->
       else if error
         msg.send {room: msg.message.user.name}, "error:\n```\n#{error}\n```"
       if stdout
-        msg.send {room: msg.message.user.name}, "stdout:\n```\n#{stdout}\n```"
+        msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
 
   robot.respond /tf (plan|refresh|apply|destroy) ([^\s]+)$/i, (msg) ->
     unless robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
@@ -135,4 +135,4 @@ module.exports = (robot) ->
       else if error
         msg.send {room: msg.message.user.name}, "error:\n```\n#{error}\n```"
       if stdout
-        msg.send {room: msg.message.user.name}, "stdout:\n```\n#{stdout}\n```"
+        msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
