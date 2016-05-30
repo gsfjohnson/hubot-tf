@@ -32,7 +32,7 @@ servicequeue = ->
 isAuthorized = (robot, msg) ->
   if robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
     return true
-  msg.send {room: msg.message.user.name}, "Not authorized.  Missing #{tfRole} role."
+  msg.send {room: msg.message.user.name}, "Not authorized.  Missing `#{tfRole}` role."
   return false
 
 fileExistsSendAndReturnTrue = (msg, file, failresponse) ->
