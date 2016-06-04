@@ -15,7 +15,7 @@
 
 fs = require('fs')
 sys = require('sys')
-exec = require('child_process').exec;
+exec = require('child_process').exec
 
 basepath = process.env.HUBOT_TF_BASEPATH || ''
 privatekey = basepath + "/hubot-tf.key"
@@ -30,19 +30,19 @@ servicequeue = ->
   msg.send {room: msg.message.user.name}, out
 
 isAuthorized = (robot, msg) ->
-  if robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,tfRole)
-    return true
-  msg.send {room: msg.message.user.name}, "Not authorized.  Missing `#{tfRole}` role."
+  u = msg.envelope.user
+  return true if robot.auth.isAdmin(u) or robot.auth.hasRole(u,tfRole)
+  msg.send {room: u.name}, "Not authorized.  Missing `#{tfRole}` role."
   return false
 
 fileExistsSendAndReturnTrue = (msg, file, failresponse) ->
-  if fs.existsSync file
+  if fs.existsSync "#{basepath}/#{file}"
     msg.send {room: msg.message.user.name}, failresponse
     return true
   return false  # does not exist
 
 fileMissingSendAndReturnTrue = (msg, file, failresponse) ->
-  if ! fs.existsSync file
+  if ! fs.existsSync "#{basepath}/#{file}"
     msg.send {room: msg.message.user.name}, failresponse
     return true
   return false  # file exists
@@ -56,20 +56,65 @@ execAndSendOutput = (msg, cmd) ->
     if stdout
       msg.send {room: msg.message.user.name}, "```\n#{stdout}\n```"
 
+getDirectories = ->
+  dirs = []
+  for fn in fs.readdirSync(basepath)
+    stat = fs.statSync("#{basepath}/#{fn}")
+    dirs.push fn if stat.isDirectory()
+  return dirs
+
+formatProjEnv = (robot, proj) ->
+  brainloc = "hubot-tf_env_#{proj}"
+  localstorage = JSON.parse(robot.brain.get brainloc) or {}
+
+  ekvs = [ "`#{proj}` env:" ]
+  ekvs.push "  `#{k}` = `#{v}`" for k,v of localstorage
+  ekvs = [ "No environment variables for `#{proj}`." ] unless ekvs.length > 1
+  return ekvs.join "\n"
+
+updateProjEnv = (robot, proj, key, val=false) ->
+  brainloc = "hubot-tf_env_#{proj}"
+  localstorage = JSON.parse(robot.brain.get brainloc) or {}
+  console.log "loaded #{brainloc}: #{JSON.stringify(localstorage)}"
+  if val is false
+    delete localstorage[key]
+    out = "env `#{proj}`: `#{key}` unset."
+  else
+    localstorage[key] = val
+    out = "env `#{proj}`: `#{key}` = `#{val}`"
+  robot.brain.set brainloc, JSON.stringify(localstorage)
+  robot.brain.save()
+  console.log "saved #{brainloc}: #{JSON.stringify(localstorage)}"
+  return out
+
+getProjEnv = (robot, proj) ->
+  brainloc = "hubot-tf_env_#{proj}"
+  localstorage = JSON.parse(robot.brain.get brainloc) or {}
+  ekva = []
+  ekva.push "#{k}=#{v}" for k,v of localstorage
+  return ekva.join " "
+
 module.exports = (robot) ->
 
   robot.respond /tf help$/, (msg) ->
     cmds = []
     arr = [
-      "#{tfName} (create|display|erase) key - rsa key operations, for git"
-      "#{tfName} clone <repourl> <projectname> - clone git repo into projectname directory"
-      "#{tfName} list projects - enumerate projects"
-      "#{tfName} remote <projectname> - git remote info"
-      "#{tfName} delete <projectname> - erase <projectname> files"
-      "#{tfName} (plan|refresh|apply|get|destroy) <projectname> - tf operations"
-      "#{tfName} env <projectname> set <key>=<value> - set env var"
-      "#{tfName} env <projectname> unset <key> - unset environmental variable"
-      "#{tfName} env <projectname> list - show env for project"
+      "#{tfName} create key - create rsa key for git"
+      "#{tfName} display key - display public key for github deploy"
+      "#{tfName} erase key - delete rsa key"
+      "#{tfName} list - enumerate projects"
+      "#{tfName} delete <projectname> - erase project"
+      "#{tfName} git clone <repourl> <proj> - clone git repo into proj directory"
+      "#{tfName} git pull <proj> - git pull"
+      "#{tfName} git remote <proj> - git remote info"
+      "#{tfName} tf apply <proj> [verbose] - create resources"
+      "#{tfName} tf destroy <proj> [verbose] - destroy resources"
+      "#{tfName} tf get <proj> [update] - get modules, specify update if needed"
+      "#{tfName} tf plan <proj> [verbose] - show plan"
+      "#{tfName} tf refresh <proj> [verbose] - refresh resource state"
+      "#{tfName} env <proj>|me|all <key>=<value>[ key=value] - set env"
+      "#{tfName} env <proj>|me|all <key> - unset env var"
+      "#{tfName} env [proj] - show env"
     ]
 
     for str in arr
@@ -81,6 +126,7 @@ module.exports = (robot) ->
     else
       msg.reply cmds.join "\n"
 
+
   robot.respond /tf create key$/i, (msg) ->
     return unless isAuthorized robot, msg
     return if fileExistsSendAndReturnTrue msg, publickey, "Key exists!  Erase it first."
@@ -90,12 +136,14 @@ module.exports = (robot) ->
       pubkey = fs.readFileSync("#{publickey}", 'utf-8').toString()
       msg.send {room: msg.message.user.name}, "Add this to your github repo as a deploy key, to give hubot read-only access.\n```\n#{pubkey}\n```"
 
+
   robot.respond /tf display key$/i, (msg) ->
     return unless isAuthorized robot, msg
     return if fileMissingSendAndReturnTrue msg, publickey, "No key on file!  Create one first."
 
     pubkey = fs.readFileSync("#{publickey}", 'utf-8').toString()
     return msg.send {room: msg.message.user.name}, "Add this to your github repo as a deploy key, to give hubot read-only access.\n```\n#{pubkey}\n```"
+
 
   robot.respond /tf erase key$/i, (msg) ->
     return unless isAuthorized robot, msg
@@ -105,12 +153,13 @@ module.exports = (robot) ->
     fs.unlinkSync("#{publickey}")
     return msg.send {room: msg.message.user.name}, "Key erased!"
 
-  robot.respond /tf clone ([^\s]+) ([^\s]+)$/i, (msg) ->
+
+  robot.respond /tf git clone ([^\s]+) ([^\s]+)$/i, (msg) ->
     return unless isAuthorized robot, msg
 
     url = msg.match[1]
-    projname = msg.match[2].replace /\//, "_"
-    projpath = basepath + "/" + projname
+    proj = msg.match[2].replace /\//, "_"
+    projpath = basepath + "/" + proj
 
     #fn = msg.message.user.name
     #fn.replace /\//, "_"
@@ -119,69 +168,73 @@ module.exports = (robot) ->
     cmd = "GIT_SSH_COMMAND='ssh -i #{privatekey} -F /dev/null -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' git clone #{url} #{projpath}"
     execAndSendOutput msg, cmd
 
-  robot.respond /tf list(\sprojects)?$/i, (msg) ->
+
+  robot.respond /tf list$/i, (msg) ->
     return unless isAuthorized robot, msg
 
-    dir = []
-    for fn in fs.readdirSync(basepath)
-      stat = fs.statSync("#{basepath}/#{fn}")
-      dir.push fn if stat.isDirectory()
+    dirs = getDirectories()
 
-    out = dir.join "`, `"
-    return msg.send {room: msg.message.user.name}, "Projects: `#{out}`"
+    if dirs.length > 0
+      return msg.send {room: msg.message.user.name}, "Projects: `#{dirs.join '`, `'}`"
 
-  robot.respond /tf (remote|pull) ([^\s]+)$/i, (msg) ->
+    return msg.send {room: msg.message.user.name}, "No projects.  Clone something with `tf git clone <repourl> <proj>`."
+
+
+  robot.respond /tf git (remote|pull) ([^\s]+)$/i, (msg) ->
     action = msg.match[1]
-    projname = msg.match[2].replace /\//, "_"
+    proj = msg.match[2].replace /\//, "_"
     return unless isAuthorized robot, msg
-    return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
+    return if fileMissingSendAndReturnTrue msg, proj, "Invalid project name: `#{proj}`"
 
     gitcmd = "git remote -v" if action == 'remote'
     gitcmd = "git pull" if action == 'pull'
-    cmd = "cd #{basepath}/#{projname} ; #{gitcmd}"
+    cmd = "cd #{basepath}/#{proj} ; #{gitcmd}"
     execAndSendOutput msg, cmd
 
-  robot.respond /tf (get) ([^\s]+)( update)?$/i, (msg) ->
+
+  robot.respond /tf tf (get) ([^\s]+)( update)?$/i, (msg) ->
     action = msg.match[1]
-    projname = msg.match[2].replace /\//, "_"
+    proj = msg.match[2].replace /\//, "_"
     update = if msg.match[3] then true else false
     return unless isAuthorized robot, msg
-    return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
+    return if fileMissingSendAndReturnTrue msg, proj, "Invalid project name: `#{proj}`"
 
     params = [ "-no-color" ]
     params.push "-update=true" if update
     paramline = params.join " "
 
-    cmd = "cd #{basepath}/#{projname}; terraform #{action} #{paramline}"
+    cmd = "cd #{basepath}/#{proj}; terraform #{action} #{paramline}"
     execAndSendOutput msg, cmd
 
+
   robot.respond /tf delete ([^\s]+)$/i, (msg) ->
-    projname = msg.match[1].replace /\//, "_"
+    proj = msg.match[1].replace /\//, "_"
     return unless isAuthorized robot, msg
-    return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
+    return if fileMissingSendAndReturnTrue msg, proj, "Invalid project name: `#{proj}`"
 
-    return exec "cd #{basepath}; rm -rf #{projname}", (error, stdout, stderr) ->
-      msg.send {room: msg.message.user.name}, "Project deleted: #{projname}"
+    return exec "cd #{basepath}; rm -rf #{proj}", (error, stdout, stderr) ->
+      msg.send {room: msg.message.user.name}, "Project deleted: #{proj}"
 
-  robot.respond /tf (plan|refresh|apply|destroy) ([^\s]+)( verbose)?$/i, (msg) ->
+
+  robot.respond /tf tf (plan|refresh|apply|destroy) ([^\s]+)( verbose)?$/i, (msg) ->
     action = msg.match[1]
-    projname = msg.match[2].replace /\//, "_"
+    proj = msg.match[2].replace /\//, "_"
     verbose = true if msg.match[3]
     return unless isAuthorized robot, msg
-    return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
+    return if fileMissingSendAndReturnTrue msg, proj, "Invalid project name: `#{proj}`"
 
-    brainloc = "hubot-tf_#{projname}"
-    localstorage = JSON.parse(robot.brain.get brainloc) or {}
-    ekvs = []
-    ekvs.push "#{k}=#{v}" for k,v of localstorage
-    environment = ekvs.join " "
+    env = []
+    for domain in ['all','me',proj]
+      domain = msg.message.user.name if domain is 'me'
+      env.push getProjEnv robot, domain
+    envline = env.join " "
 
     params = []
     params.push "-input=false"
     params.push "-no-color"
     paramline = params.join " "
 
-    cmdline = "cd #{basepath}/#{projname}; #{environment} terraform #{action} #{paramline}"
+    cmdline = "cd #{basepath}/#{proj}; #{envline} terraform #{action} #{paramline}"
     cmdline = "#{cmdline} -force" if action == 'destroy'
     msg.send {room: msg.message.user.name}, "```\n#{cmdline}\n```"
     exec cmdline, (error, stdout, stderr) ->
@@ -213,44 +266,40 @@ module.exports = (robot) ->
       else if error
         msg.send {room: msg.message.user.name}, "error:\n```\n#{error}\n```"
 
-  robot.respond /tf env ([^\s]+) set ([^\s]+)=(.+)$/i, (msg) ->
-    projname = msg.match[1].replace /\//, "_"
-    ekey = msg.match[2]
-    evalue = msg.match[3]
+
+  robot.respond /tf env ([^\s]+) (.+)$/i, (msg) ->
+    console.log "tf env-set"
+    proj = msg.match[1].replace /\//, "_"
+    ekvpairs = msg.match[2].split " "
+
     return unless isAuthorized robot, msg
-    return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
+    if proj not in ['me','all']
+      return if fileMissingSendAndReturnTrue msg, proj, "Env-set: invalid project name: `#{proj}`"
 
-    brainloc = "hubot-tf_#{projname}"
-    localstorage = JSON.parse(robot.brain.get brainloc) or {}
-    localstorage[ekey] = evalue
-    robot.brain.set brainloc, JSON.stringify(localstorage)
-    robot.brain.save()
+    proj = msg.message.user.name if proj is 'me'
 
-    return msg.send {room: msg.message.user.name}, "`#{projname}` env set: `#{ekey}` = `#{evalue}`"
+    outs = []
+    for ekv in ekvpairs
+      ekva = ekv.split "="
+      out = updateProjEnv robot, proj, ekva[0], ekva[1]
+      outs.push out
 
-  robot.respond /tf env ([^\s]+) unset ([^\s]+)$/i, (msg) ->
-    projname = msg.match[1].replace /\//, "_"
-    ekey = msg.match[2]
+    return msg.send {room: msg.message.user.name}, outs.join "\n"
+
+
+  robot.respond /tf env(?: ([^\s]+))?$/i, (msg) ->
+    console.log "tf env-show"
+    proj = if msg.match[1] then msg.match[1].replace /\//, "_" else false
+
     return unless isAuthorized robot, msg
-    return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
+    if proj and proj not in ['me','all']
+      return if fileMissingSendAndReturnTrue msg, proj, "Env-show: invalid project name: `#{proj}`"
 
-    brainloc = "hubot-tf_#{projname}"
-    localstorage = JSON.parse(robot.brain.get brainloc) or {}
-    delete localstorage[ekey]
-    robot.brain.set brainloc, JSON.stringify(localstorage)
-    robot.brain.save()
+    domains = if proj then [proj] else ['all','me']
 
-    return msg.send {room: msg.message.user.name}, "`#{projname}` env `#{ekey}` unset."
+    out = []
+    for proj in domains
+      proj = msg.message.user.name if proj is 'me'
+      out.push formatProjEnv robot, proj
 
-  robot.respond /tf env ([^\s]+)(?:\slist)?$/i, (msg) ->
-    projname = msg.match[1].replace /\//, "_"
-    return unless isAuthorized robot, msg
-    return if fileMissingSendAndReturnTrue msg, "#{basepath}/#{projname}", "Invalid project name: `#{projname}`"
-
-    brainloc = "hubot-tf_#{projname}"
-    localstorage = JSON.parse(robot.brain.get brainloc) or {}
-
-    ekvs = [ "`#{projname}` env:" ]
-    ekvs.push "  `#{k}` = `#{v}`" for k,v of localstorage
-    ekvs = [ "No environment variables for `#{projname}`." ] unless ekvs.length > 1
-    return msg.send {room: msg.message.user.name}, ekvs.join "\n"
+    return msg.send {room: msg.message.user.name}, out.join "\n"
